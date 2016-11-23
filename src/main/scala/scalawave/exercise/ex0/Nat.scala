@@ -22,16 +22,29 @@ package scalawave.exercise.ex0
 */
 
 
+import scala.annotation.tailrec
 import scalawave.common.ValueLevelNat._
 
 object Nat {
 
-  def toInt(n: Nat): Int = ???
+  def toInt(n: Nat): Int = n match {
+    case Zero => 0
+    case Succ(m) => 1 + toInt(m)
+  }
 
-  def add(n1: Nat, n2: Nat): Nat = ???
+  @tailrec
+  def add(n1: Nat, n2: Nat): Nat = n1 match {
+    case Zero => n2
+    case Succ(m) => add(m, Succ(n2))
+  }
 
-  def lte(n1: Nat, n2: Nat): Boolean = ???
+  def lte(n1: Nat, n2: Nat): Boolean = n1 == n2 || lt(n1, n2)
 
-  def lt(n1: Nat, n2: Nat): Boolean = ???
+  @tailrec
+  def lt(n1: Nat, n2: Nat): Boolean = (n1, n2) match {
+    case (Succ(a), Succ(b)) => lt(a, b)
+    case (_, Zero) => false
+    case (Zero, _) => true
+  }
 
 }
