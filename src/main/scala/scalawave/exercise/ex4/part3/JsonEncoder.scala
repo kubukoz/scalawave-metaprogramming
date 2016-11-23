@@ -48,7 +48,46 @@ object JsonEncoder {
     def toJson(obj: T): O = enc(obj)
   }
 
-  // TODO: write your implicit instances here
+
+  implicit val intEncoder: Aux[Int, JsNum] = makeEnc[Int, JsNum](JsNum(_))
+
+  implicit val strEncoder: Aux[String, JsStr] = makeEnc[String, JsStr](JsStr)
+
+  implicit val boolEncoder: Aux[Boolean, JsBool] = makeEnc[Boolean, JsBool](JsBool)
+
+  implicit val doubleEncoder: Aux[Double, JsNum] = makeEnc[Double, JsNum](JsNum(_))
+
+  implicit val hnilCase: Aux[HNil, JsObj] = makeEnc[HNil, JsObj](_ => JsObj())
+
+  implicit def hconsCase[H, T <: HList, K <: Symbol](
+                                                      implicit hEnc: JsonEncoder[H],
+                                                      tEnc: JsonEncoder.Aux[T, JsObj],
+                                                      wit: Witness.Aux[K]
+                                                    ): JsonEncoder.Aux[FieldType[K, H] :: T, JsObj] = makeEnc {
+    case h :: t =>
+      (wit.value.name -> hEnc.toJson(h)) +: tEnc.toJson(t)
+  }
+
+  implicit val cNilEnc = makeEnc[CNil, JsObj](_ => throw new RuntimeException("will never happen"))
+
+  implicit def cConsCase[N <: Symbol, H, T <: Coproduct](
+                                                        implicit nameWit: Witness.Aux[N],
+                                                        hEnc: JsonEncoder[H],
+                                                        tEnc: JsonEncoder.Aux[T, JsObj]
+                                                        ) = makeEnc[FieldType[N, H] :+: T, JsObj]{
+    case Inl(head) => JsObj(nameWit.value.name -> hEnc.toJson(head))
+    case Inr(tail) => tEnc.toJson(tail)
+  }
+
+
+  implicit def genInstance[T, R](
+                                  implicit gen: LabelledGeneric.Aux[T, R],
+                                  encoder: JsonEncoder.Aux[R, JsObj]
+                                ) =
+    makeEnc[T, JsObj]{ value =>
+      encoder.toJson(gen.to(value))
+    }
+
 }
 
 object JsonEncoderSyntax {
