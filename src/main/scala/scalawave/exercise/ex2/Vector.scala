@@ -29,16 +29,17 @@ import scalawave.exercise.ex1._
 
 case class Vector[N <: Nat, +T](toList: List[T]) {
 
-  def ::[U >: T](elem: U): Vector[Succ[N], U] = ???
+  def ::[U >: T](elem: U): Vector[Succ[N], U] = Vector(elem :: toList)
 
-  // TODO: write returned type explicitly
-  def ++[M <: Nat, U >: T](suffix: Vector[M, U]) = ???
+  def ++[M <: Nat, U >: T](suffix: Vector[M, U])
+                          (implicit add: Add[N, M]): Vector[add.Result, U] =
+    Vector(toList ::: suffix.toList)
 
   // should not compile for empty vectors
-  def head: T = ???
+  def head(implicit nz: Zero Lt N): T = toList.head
 
   // should not compile if index K is out of bound given by M
-  def at[K <: Nat]: T = ???
+  def at[K <: Nat](implicit lt: K Lt N, ti: ToInt[K]): T = toList(ti.value)
 
   override def toString: String =
     s"Vector[${toList.size}](${toList.mkString(", ")})"
