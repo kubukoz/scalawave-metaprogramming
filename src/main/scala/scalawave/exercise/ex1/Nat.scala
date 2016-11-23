@@ -33,6 +33,8 @@ package scalawave.exercise.ex1
     Add[Zero, Succ[Zero]].toInt // should be 1: Int
 */
 
+import shapeless.=:!=
+
 import scalawave.common.TypeLevelNat._
 
 
@@ -46,12 +48,12 @@ object ToInt {
   // TODO: finish implementing these implicit instances
 
   implicit val zeroCase: ToInt[Zero] = new ToInt[Zero] {
-    val value: Int = ???
+    val value: Int = 0
   }
 
-  implicit def succCase[N <: Nat](implicit toInt: ToInt[N]): ToInt[Succ[N]] =
-    new ToInt[Succ[N]] {
-      val value: Int = ???
+  implicit def succCase[A <: Nat](implicit toInt: ToInt[A]): ToInt[Succ[A]] =
+    new ToInt[Succ[A]] {
+      val value: Int = 1 + toInt.value
     }
 }
 
@@ -67,7 +69,13 @@ object Add {
     def toInt(implicit toInt: ToInt[add.Result]): Int = toInt.value
   }
 
-  // TODO: put your implicit instances here
+  implicit def zeroAdd[M <: Nat]: Add.Aux[Zero, M, M] = new Add[Zero, M] {
+    override type Result = M
+  }
+
+  implicit def succAdd[N <: Nat, M <: Nat](implicit add: Add[N, Succ[M]]): Add.Aux[Succ[N], M, add.Result] = new Add[Succ[N], M] {
+    override type Result = add.Result
+  }
 }
 
 
@@ -77,15 +85,17 @@ class Lte[N <: Nat, M <: Nat]
 
 object Lte {
 
-  // TODO: put your implicit instances here
-}
+  implicit def succCase[N <: Nat, M <: Nat](implicit lte1: Lte[N, M]): Lte[Succ[N], Succ[M]] = new Lte[Succ[N], Succ[M]]
 
+  implicit def zeroLCase[M <: Nat]: Lte[Zero, M] = new Lte[Zero, M]
+
+}
 
 // NOTE:  We want the instances to be only for N < M and compile error otherwise
 
 class Lt[N <: Nat, M <: Nat]
 
 object Lt {
-
-  // TODO: put your implicit instances here
+  implicit def lt[N <: Nat, M <: Nat](implicit neq: N =:!= M,
+                                      lte: Lte[N, M]): Lt[N, M] = new Lt[N, M]
 }
